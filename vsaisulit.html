@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VS AI Sulit</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #1a001a, #00001a, #000033);
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Efek cahaya putih & hitam di pinggir layar */
+    .glow {
+      position: fixed;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .glow.white {
+      width: 100%;
+      height: 10px;
+      top: 0;
+      left: 0;
+      background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.7), transparent);
+      animation: waveGlow 4s linear infinite;
+    }
+
+    .glow.white.right {
+      width: 10px;
+      height: 100%;
+      top: 0;
+      right: 0;
+      background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.6), transparent);
+      animation: waveGlow 4s linear infinite;
+    }
+
+    .glow.black {
+      width: 10px;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.6), transparent);
+      animation: waveDark 4s linear infinite;
+    }
+
+    .glow.black.bottom {
+      width: 100%;
+      height: 10px;
+      bottom: 0;
+      left: 0;
+      background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.6), transparent);
+      animation: waveDark 4s linear infinite;
+    }
+
+    @keyframes waveGlow {
+      0% { transform: translateX(0); }
+      50% { transform: translateX(10px); }
+      100% { transform: translateX(0); }
+    }
+
+    @keyframes waveDark {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+
+    h1 {
+      text-align: center;
+      color: gold;
+      margin-top: 20px;
+      font-size: 2em;
+      z-index: 2;
+      position: relative;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 2;
+      position: relative;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 10px;
+      margin-top: 20px;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      font-size: 2em;
+      text-align: center;
+      line-height: 100px;
+      background-color: #111;
+      color: cyan;
+      border: 2px solid #444;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .cell:hover {
+      background-color: #222;
+    }
+
+    .score {
+      color: white;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .btn-back {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      padding: 10px 20px;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      z-index: 10;
+    }
+
+    .btn-back:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <!-- Efek pinggir layar -->
+  <div class="glow white"></div>
+  <div class="glow white right"></div>
+  <div class="glow black"></div>
+  <div class="glow black bottom"></div>
+
+  <h1>Tic Tac Toe - AI Sulit</h1>
+
+  <div class="container">
+    <div class="board" id="board"></div>
+    <div class="score" id="score">X: 0 | O: 0 | Seri: 0</div>
+  </div>
+
+  <button class="btn-back" onclick="window.location.href='index.html'">⮌ Menu</button>
+
+  <audio id="xSound" src="x.mp3"></audio>
+  <audio id="oSound" src="o.mp3"></audio>
+
+  <script>
+    const board = document.getElementById("board");
+    const scoreDisplay = document.getElementById("score");
+    const xSound = document.getElementById("xSound");
+    const oSound = document.getElementById("oSound");
+
+    let cells = Array(9).fill("");
+    let player = "X";
+    let scores = { X: 0, O: 0, Seri: 0 };
+    let isGameOver = false;
+
+    function renderBoard() {
+      board.innerHTML = "";
+      cells.forEach((val, i) => {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.textContent = val;
+        cell.addEventListener("click", () => makeMove(i));
+        board.appendChild(cell);
+      });
+    }
+
+    function makeMove(i) {
+      if (cells[i] || isGameOver) return;
+
+      cells[i] = player;
+      playSound(player);
+      renderBoard();
+
+      if (checkWin(player)) {
+        alert(`${player} menang!`);
+        scores[player]++;
+        resetBoard();
+      } else if (cells.every(cell => cell)) {
+        alert("Seri!");
+        navigator.vibrate(200);
+        scores.Seri++;
+        resetBoard();
+      } else {
+        player = player === "X" ? "O" : "X";
+        if (player === "O") setTimeout(aiMove, 500);
+      }
+      updateScore();
+    }
+
+    function aiMove() {
+      let bestScore = -Infinity;
+      let move;
+      cells.forEach((val, i) => {
+        if (!val) {
+          cells[i] = "O";
+          let score = minimax(cells, 0, false);
+          cells[i] = "";
+          if (score > bestScore) {
+            bestScore = score;
+            move = i;
+          }
+        }
+      });
+      makeMove(move);
+    }
+
+    function minimax(newBoard, depth, isMaximizing) {
+      const winner = checkWin("O") ? "O" : checkWin("X") ? "X" : null;
+      if (winner === "O") return 10 - depth;
+      if (winner === "X") return depth - 10;
+      if (newBoard.every(cell => cell)) return 0;
+
+      if (isMaximizing) {
+        let best = -Infinity;
+        newBoard.forEach((val, i) => {
+          if (!val) {
+            newBoard[i] = "O";
+            best = Math.max(best, minimax(newBoard, depth + 1, false));
+            newBoard[i] = "";
+          }
+        });
+        return best;
+      } else {
+        let best = Infinity;
+        newBoard.forEach((val, i) => {
+          if (!val) {
+            newBoard[i] = "X";
+            best = Math.min(best, minimax(newBoard, depth + 1, true));
+            newBoard[i] = "";
+          }
+        });
+        return best;
+      }
+    }
+
+    function checkWin(p) {
+      const winPatterns = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      return winPatterns.some(pattern => 
+        pattern.every(i => cells[i] === p)
+      );
+    }
+
+    function resetBoard() {
+      cells = Array(9).fill("");
+      isGameOver = false;
+      player = "X";
+      renderBoard();
+    }
+
+    function updateScore() {
+      scoreDisplay.textContent = `X: ${scores.X} | O: ${scores.O} | Seri: ${scores.Seri}`;
+    }
+
+    function playSound(p) {
+      if (p === "X") xSound.play();
+      else oSound.play();
+    }
+
+    renderBoard();
+    updateScore();
+  </script>
+</body>
+</html>

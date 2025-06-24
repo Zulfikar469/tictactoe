@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Tic Tac Toe VS AI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: white;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { margin-top: 30px; }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+      margin: 20px 0;
+    }
+    .cell {
+      background-color: white;
+      color: black;
+      font-size: 36px;
+      font-weight: bold;
+      border: 2px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .cell:hover {
+      transform: scale(1.05);
+    }
+    .winning-cell {
+      animation: blink 0.8s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { background-color: #4CAF50; color: white; }
+      50% { background-color: yellow; color: black; }
+    }
+    #status { font-size: 20px; margin-top: 10px; }
+    #scoreboard { margin-top: 10px; font-size: 18px; }
+    button {
+      margin: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #2196F3;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background-color: #1976D2; }
+  </style>
+</head>
+<body>
+
+  <h1>Tic Tac Toe VS AI</h1>
+  <div id="board"></div>
+  <div id="status">Giliran: X (Kamu)</div>
+  <div id="scoreboard">
+    ❌ X: <span id="scoreX">0</span> |
+    ⭕ O: <span id="scoreO">0</span> |
+    🤝 Seri: <span id="drawCount">0</span>
+  </div>
+  <button onclick="resetGame()">Ulangi Permainan</button>
+
+  <audio id="soundX" src="X.mp3"></audio>
+  <audio id="soundO" src="O.mp3"></audio>
+
+  <script>
+    const board = document.getElementById("board");
+    const status = document.getElementById("status");
+    const scoreX = document.getElementById("scoreX");
+    const scoreO = document.getElementById("scoreO");
+    const drawCount = document.getElementById("drawCount");
+    const soundX = document.getElementById("soundX");
+    const soundO = document.getElementById("soundO");
+
+    let currentPlayer = "X";
+    let score = { X: 0, O: 0, draw: 0 };
+    const cells = [];
+
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      board.appendChild(cell);
+      cells.push(cell);
+
+      cell.addEventListener("click", () => {
+        if (cell.textContent === "" && currentPlayer === "X" && !checkWinner()) {
+          makeMove(cell, "X");
+          const winner = checkWinner();
+          if (!winner && !isDraw()) {
+            setTimeout(aiMove, 500); // tunggu sebentar baru AI main
+          }
+        }
+      });
+    }
+
+    function makeMove(cell, player) {
+      cell.textContent = player;
+      if (player === "X") {
+        soundX.currentTime = 0;
+        soundX.play();
+      } else {
+        soundO.currentTime = 0;
+        soundO.play();
+      }
+
+      const winner = checkWinner();
+      if (winner) {
+        status.textContent = `Pemenang: ${winner}`;
+        score[winner]++;
+        updateScore();
+      } else if (isDraw()) {
+        status.textContent = "Seri!";
+        score.draw++;
+        updateScore();
+      } else {
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+        status.textContent = `Giliran: ${currentPlayer === "X" ? "Kamu" : "AI"}`;
+      }
+    }
+
+    function aiMove() {
+      const emptyCells = cells.filter(cell => cell.textContent === "");
+      if (emptyCells.length === 0) return;
+      const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      makeMove(randomCell, "O");
+    }
+
+    function checkWinner() {
+      const combos = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      for (let combo of combos) {
+        const [a,b,c] = combo;
+        if (
+          cells[a].textContent &&
+          cells[a].textContent === cells[b].textContent &&
+          cells[a].textContent === cells[c].textContent
+        ) {
+          cells[a].classList.add("winning-cell");
+          cells[b].classList.add("winning-cell");
+          cells[c].classList.add("winning-cell");
+          return cells[a].textContent;
+        }
+      }
+      return null;
+    }
+
+    function isDraw() {
+      return cells.every(cell => cell.textContent !== "") && !checkWinner();
+    }
+
+    function updateScore() {
+      scoreX.textContent = score.X;
+      scoreO.textContent = score.O;
+      drawCount.textContent = score.draw;
+    }
+
+    function resetGame() {
+      cells.forEach(cell => {
+        cell.textContent = "";
+        cell.classList.remove("winning-cell");
+      });
+      currentPlayer = "X";
+      status.textContent = "Giliran: X (Kamu)";
+    }
+  </script>
+
+</body>
+</html>

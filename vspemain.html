@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vs Pemain</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom right, #0f0c29, #302b63, #24243e);
+      color: #fff;
+      overflow: hidden;
+      position: relative;
+    }
+    .container {
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+      animation: fadeIn 1s ease-in-out forwards;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .cell {
+      background-color: rgba(0,0,0,0.5);
+      border: 2px solid #999;
+      font-size: 2em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .cell:hover {
+      background-color: #444;
+    }
+    #status {
+      font-size: 1.2em;
+      margin: 10px 0;
+    }
+    #skor {
+      margin: 10px 0;
+    }
+    .back-button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 1em;
+      background: linear-gradient(135deg, #6a00ff, #00d2ff);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      animation: fadeInUp 1.5s ease-in-out;
+      transition: transform 0.2s ease;
+    }
+    .back-button:hover {
+      transform: scale(1.05);
+    }
+    .cyber-border {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border: 3px solid rgba(0, 255, 255, 0.2);
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+      pointer-events: none;
+      animation: pulseBorder 2s infinite alternate;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(40px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    @keyframes pulseBorder {
+      0% { box-shadow: 0 0 10px rgba(0,255,255,0.3);}
+      100% { box-shadow: 0 0 25px rgba(0,255,255,0.6);}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tic Tac Toe: VS Pemain</h1>
+    <div id="board"></div>
+    <div id="status">Giliran: X</div>
+    <div id="skor">
+      <p>X: <span id="xSkor">0</span> | O: <span id="oSkor">0</span> | Seri: <span id="seriSkor">0</span></p>
+    </div>
+    <button class="back-button" onclick="kembali()">⬅️ Kembali ke Menu</button>
+  </div>
+  <div class="cyber-border"></div>
+
+  <audio id="xSound" src="x.mp3"></audio>
+  <audio id="oSound" src="o.mp3"></audio>
+  <script>
+    const board = document.getElementById("board");
+    const statusText = document.getElementById("status");
+    const xSkorEl = document.getElementById("xSkor");
+    const oSkorEl = document.getElementById("oSkor");
+    const seriSkorEl = document.getElementById("seriSkor");
+    const xSound = document.getElementById("xSound");
+    const oSound = document.getElementById("oSound");
+
+    let cells = [];
+    let currentPlayer = "X";
+    let gameActive = true;
+    let skorX = 0;
+    let skorO = 0;
+    let seri = 0;
+
+    function createBoard() {
+      board.innerHTML = "";
+      cells = [];
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.addEventListener("click", () => handleCellClick(i));
+        board.appendChild(cell);
+        cells.push(cell);
+      }
+    }
+
+    function handleCellClick(index) {
+      if (!gameActive || cells[index].textContent !== "") return;
+      cells[index].textContent = currentPlayer;
+      playSound(currentPlayer);
+      checkResult();
+      if (gameActive) {
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+        statusText.textContent = "Giliran: " + currentPlayer;
+      }
+    }
+
+    function checkResult() {
+      const winPatterns = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+      const boardState = cells.map(cell => cell.textContent);
+      for (const pattern of winPatterns) {
+        const [a,b,c] = pattern;
+        if (
+          boardState[a] &&
+          boardState[a] === boardState[b] &&
+          boardState[a] === boardState[c]
+        ) {
+          gameActive = false;
+          statusText.textContent = `${boardState[a]} Menang!`;
+          boardState[a] === "X" ? skorX++ : skorO++;
+          updateSkor();
+          setTimeout(resetGame, 2000);
+          return;
+        }
+      }
+      if (!boardState.includes("")) {
+        statusText.textContent = "Seri!";
+        seri++;
+        gameActive = false;
+        navigator.vibrate?.(300); // getar saat seri
+        updateSkor();
+        setTimeout(resetGame, 2000);
+      }
+    }
+
+    function resetGame() {
+      createBoard();
+      currentPlayer = "X";
+      gameActive = true;
+      statusText.textContent = "Giliran: X";
+    }
+
+    function updateSkor() {
+      xSkorEl.textContent = skorX;
+      oSkorEl.textContent = skorO;
+      seriSkorEl.textContent = seri;
+    }
+
+    function playSound(player) {
+      if (player === "X") {
+        xSound.currentTime = 0;
+        xSound.play();
+      } else {
+        oSound.currentTime = 0;
+        oSound.play();
+      }
+    }
+
+    function kembali() {
+      window.location.href = "index.html";
+    }
+
+    createBoard();
+  </script>
+</body>
+</html>
